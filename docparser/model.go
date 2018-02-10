@@ -3,7 +3,10 @@ package docparser
 import (
 	"fmt"
 	"go/ast"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -131,6 +134,47 @@ type header struct {
 
 type content struct {
 	Schema property
+}
+
+func validatePath(path string) bool {
+	// vendoring path
+	if strings.Contains(path, "vendor") {
+		return false
+	}
+
+	// not golang file
+	if !strings.HasSuffix(path, ".go") {
+		return false
+	}
+
+	// dot file
+	if strings.HasPrefix(path, ".") {
+		return false
+	}
+
+	return true
+}
+
+func (spec *openAPI) Parse(path string) {
+	// fset := token.NewFileSet() // positions are relative to fset
+
+	_ = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if validatePath(path) {
+			astFile, _ := parseFile(path)
+			spec.parseSchemas(astFile)
+			spec.parsePaths(astFile)
+		}
+		return nil
+	})
+
+	// pks, _ := parser.ParseDir(fset, path, nil, parser.ParseComments)
+	// for n, p := range pks {
+	// 	fmt.Printf("pack %s %v\n", n, p)
+	// 	for _, f := range p.Files {
+	// 		spec.parsePaths(f)
+	// 		spec.parseSchemas(f)
+	// 	}
+	// }
 }
 
 func (spec *openAPI) ParsePathsFromFile(file string) {

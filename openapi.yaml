@@ -5,9 +5,196 @@ info:
   description: ""
 servers: []
 paths:
-  /pets:
+  /authorizations/{authorizationId}:
+    delete:
+      summary: Revoke authorization
+      description: revokes the specified authorization
+      responses:
+        "204":
+          content: {}
+          description: The Authorization is succefully revoked
+        "409":
+          content: {}
+          description: the authorization cannot be revoked
+      tags:
+      - authorizations
+      parameters:
+      - in: path
+        name: authorizationId
+        schema:
+          type: string
+        required: true
+        description: uuid of the authorization
+      security:
+      - oauth:
+        - account.authorizations.management
+        - account.authorizations.administration
+  /brands/xee/devices/{deviceId}:
     get:
-      description: Returns all pets from the system that the user has access to
+      summary: Retrieve device
+      description: Returns a device corresponding to specified id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XeeDevice'
+          description: A device
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Device not found
+      tags:
+      - devices
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: string
+        required: true
+        description: id of the device
+      security:
+      - oauth:
+        - devices.administration
+  /brands/xee/devices/{deviceId}/attempts:
+    get:
+      summary: Retrieve pairing attempts of a device
+      description: returns pairings attempts corresponding to specified device id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingAttempt'
+          description: An array of attempt
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Device not found
+      tags:
+      - devices
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: string
+        required: true
+        description: id of the device
+      security:
+      - oauth:
+        - devices.administration
+    post:
+      summary: Insert pairing attempts of a device
+      description: inserts pairings attempts corresponding to specified device id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingAttempt'
+          description: An array of attempt
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Device not found
+      tags:
+      - devices
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: string
+        required: true
+        description: id of the device
+      - in: body
+        name: success
+        schema:
+          type: boolean
+        required: true
+        description: status for le pairing attempt
+      security:
+      - oauth:
+        - devices.administration
+  /brands/xee/devices/{deviceId}/pairings:
+    get:
+      summary: Retrieve pairings of a device
+      description: returns pairings corresponding to specified device id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingAttempt'
+          description: An array of pairing
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Device not found
+      tags:
+      - devices
+      parameters:
+      - in: path
+        name: deviceId
+        schema:
+          type: string
+        required: true
+        description: id of the device
+      security:
+      - oauth:
+        - devices.administration
+  /privacies/{privacyId}:
+    put:
+      summary: Stop a privacy
+      description: Stop an existing privacy session
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Privacy'
+          description: A privacy
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: the PrivacyId parameter is not a valid uuid4
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: There is a conflit
+      tags:
+      - privacies
+      parameters:
+      - in: path
+        name: privacyId
+        schema:
+          type: string
+        required: true
+        description: uuid of the privacy
+      security:
+      - oauth:
+        - privacies.management
+  /search/users:
+    get:
+      summary: Retrieve users's
+      description: returns users corresponding to a query
       responses:
         "200":
           content:
@@ -15,69 +202,621 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Pet'
-          description: A list of pets.
-        "302":
-          content: {}
-          description: Trip Signals Redirection
-          headers:
-            Location:
-              description: The url to the signal API
-              schema:
-                type: string
-      tags:
-      - pet
-      parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: integer
-          enum:
-          - "3"
-          - "4"
-        required: true
-        description: Numeric ID of the user to get
-      security:
-      - petstore_auth:
-        - write:pets
-        - read:pets
-    post:
-      description: Returns all pets from the system that the user has access to
-      responses:
-        "201":
+                  $ref: '#/components/schemas/User'
+          description: An array of users
+        "206":
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Pet'
-          description: Post a new pet
-      parameters: []
+                  $ref: '#/components/schemas/User'
+          description: An array of users
+      tags:
+      - users
+      parameters:
+      - in: header
+        name: range
+        schema:
+          type: string
+        required: false
+        description: Used for pagination, ex `signals=0-`, `signals=0-1000`, `signals=-3`
+      - in: query
+        name: q
+        schema:
+          type: string
+        required: true
+        description: the query
+      security:
+      - oauth:
+        - account.management
+  /users/{id}/vehicles:
+    post:
+      summary: Associate vehicle
+      description: Set a vehicle for an user through a specified device_id and pin
+        code
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: A vehicle
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: The userId parameter is not a valid uuid4 or your payload contains
+            some errors
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: You cannot associate this device
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: User not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: There is a conflit for that device
+      tags:
+      - vehicles
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
       requestBody:
-        description: Pet to add to the store
+        description: Device to pair to the vehicle
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Pet'
+              $ref: '#/components/schemas/AssociateDevice'
+      security:
+      - oauth:
+        - vehicles.management
+  /users/{userId}:
+    get:
+      summary: Retrieve an user
+      description: Returns a user corresponding to specified id, me is the current
+        user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: An user
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: User not found
+      tags:
+      - users
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      security:
+      - oauth:
+        - account.read
+    put:
+      summary: Update an user
+      description: Update an user with a specified ID
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: An user
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: The userId parameter is not a valid uuid4 or your payload contains
+            some errors
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: User not found
+      tags:
+      - users
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      requestBody:
+        description: User to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditableUser'
+      security:
+      - oauth:
+        - account.management
+  /users/{userId}/authorizations:
+    get:
+      summary: Retrieve users's authorizations
+      description: Returns authorizations corresponding to specified user id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Authorization'
+          description: An array of authorization
+      tags:
+      - authorizations
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      security:
+      - oauth:
+        - account.authorizations.read
+  /users/{userId}/developer:
+    get:
+      summary: Used to know if a user is a developer and has a developer account
+      description: Returns developer account corresponding to specified user id
+      responses:
+        "204":
+          content: {}
+          description: The no-content response means that the user is a developer
+        "404":
+          content: {}
+          description: The not found response means that the user is not a developer
+      tags:
+      - users
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      security:
+      - oauth:
+        - account.read
+    post:
+      summary: Used to create a developer account for a given user
+      description: create a developer account for a user specified by id
+      responses:
+        "201":
+          content: {}
+          description: The created status means that the user is now a developer
+        "409":
+          content: {}
+          description: The conflict status means that the user already was a developer
+      tags:
+      - users
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      security:
+      - oauth:
+        - account.management
+  /users/{userId}/vehicles:
+    get:
+      summary: Retrieve users's vehicles
+      description: Returns vehicles corresponding to specified user id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+          description: An array of vehicle
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: User not found
+      tags:
+      - vehicles
+      parameters:
+      - in: path
+        name: userId
+        schema:
+          type: string
+        required: true
+        description: uuid of the user, me is also acceptable
+      security:
+      - oauth:
+        - vehicles.read
+  /vehicles/{id}/device:
+    delete:
+      summary: Disassociate vehicle
+      description: Delete the pairing between a vehicle and a device
+      responses:
+        "204":
+          content: {}
+          description: Success, the pairing is deleted
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+        "409":
+          content: {}
+          description: There is a conflit for that vehicle
+      tags:
+      - vehicles
+      parameters: []
+      security:
+      - oauth:
+        - vehicles.management
+  /vehicles/{id}/privacies:
+    get:
+      summary: Retrieve privacies
+      description: Returns vehicles privacies between 2 dates inclusive
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Privacy'
+          description: An array of privacies
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: At leat one parameter is not valid
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+      tags:
+      - privacies
+      parameters:
+      - in: path
+        name: vehicleId
+        schema:
+          type: string
+        required: true
+        description: uuid of the vehicle
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        required: false
+        description: number of records returned
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date-time
+        required: false
+        description: the begining date of the search
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date-time
+        required: false
+        description: the ending date of the search
+      security:
+      - oauth:
+        - privacies.read
+    post:
+      summary: Creates a new privacy
+      description: Creates a new privacy session on this vehicle
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Privacy'
+          description: A privacy
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: The vehicleId parameter is not a valid uuid4
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: There is a conflit
+      tags:
+      - privacies
+      parameters:
+      - in: path
+        name: vehicleId
+        schema:
+          type: string
+        required: true
+        description: uuid of the vehicle
+      security:
+      - oauth:
+        - privacies.management
+  /vehicles/{vehicleId}:
+    get:
+      summary: Retrieve vehicle
+      description: Returns a vehicle corresponding to specified id
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: A vehicle
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: The vehicleId parameter is not a valid uuid4
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+      tags:
+      - vehicles
+      parameters:
+      - in: path
+        name: vehicleId
+        schema:
+          type: string
+        required: true
+        description: uuid of the vehicle
+      security:
+      - oauth:
+        - vehicle.read
+    put:
+      summary: Update vehicle
+      description: Update a vehicle with a specified ID
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: A vehicle
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: The vehicleId parameter is not a valid uuid4 or your payload
+            contains some errors
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDefinition'
+          description: Vehicle not found
+      tags:
+      - vehicles
+      parameters:
+      - in: path
+        name: vehicleId
+        schema:
+          type: string
+        required: true
+        description: uuid of the vehicle
+      requestBody:
+        description: Vehicle data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditableVehicle'
+      security:
+      - oauth:
+        - account.management
 components:
   schemas:
-    EditableFoo:
-      type: object
-      properties:
-        string:
-          type: string
-    Foo:
-      type: object
-      properties:
-        string:
-          type: string
-    Pet:
+    AssociateDevice:
       required:
-      - string
+      - deviceId
+      - devicePin
       type: object
       properties:
-        enumTest:
+        deviceId:
+          type: string
+        devicePin:
+          type: string
+    Authorization:
+      type: object
+      properties:
+        client:
+          $ref: '#/components/schemas/Client'
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scope'
+        userId:
+          type: string
+    Client:
+      type: object
+      properties:
+        description:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+    EditablePairingAttempt:
+      type: object
+      properties:
+        success:
+          type: boolean
+    EditableUser:
+      type: object
+      properties:
+        email:
+          nullable: true
+          type: string
+        firstName:
+          nullable: true
+          type: string
+        gender:
+          nullable: true
+          type: string
+          enum:
+          - UNKNOWN
+          - MALE
+          - FEMALE
+        lastName:
+          nullable: true
+          type: string
+    EditableVehicle:
+      type: object
+      properties:
+        brand:
+          nullable: true
+          type: string
+        licensePlate:
+          nullable: true
+          type: string
+        model:
+          nullable: true
+          type: string
+        name:
+          nullable: true
+          type: string
+    ErrorDefinition:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        error_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      properties:
+        constraint:
+          type: string
+        description:
+          type: string
+        field:
+          type: string
+    Pairing:
+      type: object
+      properties:
+        active:
+          type: boolean
+        brand:
+          type: string
+        deviceId:
+          type: string
+        endedAt:
+          nullable: true
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        vehicleId:
+          type: string
+    PairingAttempt:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        deviceId:
+          type: string
+        success:
+          type: boolean
+    Privacy:
+      type: object
+      properties:
+        endedAt:
+          nullable: true
+          type: string
+          format: date-time
+        id:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+    Scope:
+      type: object
+      properties:
+        id:
+          type: string
+        identifier:
+          type: string
+        visibility:
+          type: string
+    User:
+      required:
+      - gender
+      - firstName
+      - lastName
+      - email
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        email:
+          type: string
+        firstName:
+          type: string
+        gender:
           type: string
           enum:
           - UNKNOWN
@@ -85,38 +824,56 @@ components:
           - FEMALE
         id:
           type: string
-        int:
-          type: integer
-        pointerOfString:
-          nullable: true
+        lastName:
           type: string
-        pointerOfStruct:
-          nullable: true
-          $ref: '#/components/schemas/Foo'
-        pointerOfTime:
+        updatedAt:
           nullable: true
           type: string
           format: date-time
-        sliceOfStruct:
-          type: array
-          items:
-            $ref: '#/components/schemas/Foo'
-        sliceofInt:
-          type: array
-          items:
-            type: integer
-        sliceofString:
-          type: array
-          items:
-            type: string
-        string:
+    Vehicle:
+      required:
+      - name
+      - brand
+      - model
+      - licensePlate
+      type: object
+      properties:
+        brand:
           type: string
-        struct:
-          $ref: '#/components/schemas/Foo'
-        time:
+        createdAt:
           type: string
           format: date-time
-    Signals:
-      type: array
-      items:
-        $ref: '#/components/schemas/Foo'
+        device:
+          nullable: true
+          $ref: '#/components/schemas/XeeDevice'
+        fleetId:
+          nullable: true
+          type: string
+        id:
+          type: string
+        kType:
+          nullable: true
+          type: string
+        licensePlate:
+          type: string
+        model:
+          type: string
+        name:
+          type: string
+        updatedAt:
+          nullable: true
+          type: string
+          format: date-time
+        userId:
+          nullable: true
+          type: string
+    XeeDevice:
+      type: object
+      properties:
+        brand:
+          type: string
+        id:
+          type: string
+        vehicleId:
+          nullable: true
+          type: string
