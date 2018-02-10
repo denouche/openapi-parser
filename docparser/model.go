@@ -1,7 +1,6 @@
 package docparser
 
 import (
-	"fmt"
 	"go/ast"
 	"os"
 	"path/filepath"
@@ -14,7 +13,7 @@ import (
 
 var (
 	regexpPath   = regexp.MustCompile("@openapi:path\n([^@]*)$")
-	regexpEntity = regexp.MustCompile(`@openapi:schema:?(\w+)?`)
+	rexexpSchema = regexp.MustCompile(`@openapi:schema:?(\w+)?:?(?:\[([\w,]+)\])?`)
 	tab          = regexp.MustCompile(`\t`)
 )
 
@@ -37,12 +36,12 @@ func NewOpenAPI() openAPI {
 	spec.Openapi = "3.0.0"
 	spec.Paths = make(map[string]path)
 	spec.Components = Components{}
-	spec.Components.Schemas = make(map[string]property)
+	spec.Components.Schemas = make(map[string]schema)
 	return spec
 }
 
 type Components struct {
-	Schemas         map[string]property
+	Schemas         map[string]schema
 	SecuritySchemes map[string]securitySchemes `yaml:"securitySchemes,omitempty"`
 }
 
@@ -71,22 +70,23 @@ type tag struct {
 	Description string
 }
 
-func newEntity() property {
-	e := property{}
-	e.Properties = make(map[string]property)
+func newEntity() schema {
+	e := schema{}
+	e.Properties = make(map[string]schema)
 	e.Items = make(map[string]string)
 	return e
 }
 
-type property struct {
-	Nullable   bool                `yaml:"nullable,omitempty"`
-	Required   []string            `yaml:"required,omitempty"`
-	Type       string              `yaml:",omitempty"`
-	Items      map[string]string   `yaml:",omitempty"`
-	Format     string              `yaml:"format,omitempty"`
-	Ref        string              `yaml:"$ref,omitempty"`
-	Enum       []string            `yaml:",omitempty"`
-	Properties map[string]property `yaml:",omitempty"`
+type schema struct {
+	Nullable   bool              `yaml:"nullable,omitempty"`
+	Required   []string          `yaml:"required,omitempty"`
+	Type       string            `yaml:",omitempty"`
+	Items      map[string]string `yaml:",omitempty"`
+	Format     string            `yaml:"format,omitempty"`
+	Ref        string            `yaml:"$ref,omitempty"`
+	Enum       []string          `yaml:",omitempty"`
+	Properties map[string]schema `yaml:",omitempty"`
+	OneOf      []schema          `yaml:"oneOf,omitempty"`
 }
 
 type items struct {
@@ -110,7 +110,7 @@ type action struct {
 type parameter struct {
 	In          string
 	Name        string
-	Schema      property `yaml:",omitempty"`
+	Schema      schema `yaml:",omitempty"`
 	Required    bool
 	Description string
 }
@@ -128,12 +128,12 @@ type response struct {
 }
 
 type header struct {
-	Description string   `yaml:",omitempty"`
-	Schema      property `yaml:",omitempty"`
+	Description string `yaml:",omitempty"`
+	Schema      schema `yaml:",omitempty"`
 }
 
 type content struct {
-	Schema property
+	Schema schema
 }
 
 func validatePath(path string) bool {
@@ -167,34 +167,6 @@ func (spec *openAPI) Parse(path string) {
 		return nil
 	})
 
-	// pks, _ := parser.ParseDir(fset, path, nil, parser.ParseComments)
-	// for n, p := range pks {
-	// 	fmt.Printf("pack %s %v\n", n, p)
-	// 	for _, f := range p.Files {
-	// 		spec.parsePaths(f)
-	// 		spec.parseSchemas(f)
-	// 	}
-	// }
-}
-
-func (spec *openAPI) ParsePathsFromFile(file string) {
-	logrus.WithField("name", file).Info("Parsing file")
-	f, err := parseFile(file)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	spec.parsePaths(f)
-}
-
-func (spec *openAPI) ParseSchemasFromFile(file string) {
-	logrus.WithField("name", file).Info("Parsing file")
-	f, err := parseFile(file)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	spec.parseSchemas(f)
 }
 
 func (spec *openAPI) parsePaths(f *ast.File) {
@@ -264,9 +236,10 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 			if ts, ok := spc.(*ast.TypeSpec); ok {
 
 				entityName := ts.Name.Name
+				// fmt.Printf("type : %T %s\n", ts.Type, entityName)
 
 				// Looking for openapi entity
-				a := regexpEntity.FindSubmatch([]byte(t))
+				a := rexexpSchema.FindSubmatch([]byte(t))
 
 				if len(a) == 0 {
 					continue
@@ -279,6 +252,29 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					}
 				}
 
+				// MapType
+				if _, ok := ts.Type.(*ast.MapType); ok {
+
+					e := newEntity()
+					e.Type = "object"
+
+					// Name overide
+					if len(a) == 3 {
+						if string(a[2]) != "" {
+							types := strings.Split(string(a[2]), ",")
+							for _, typ := range types {
+								f := newEntity()
+								f.Type = typ
+								e.OneOf = append(e.OneOf, f)
+							}
+						}
+					}
+
+					spec.Components.Schemas[entityName] = e
+					logrus.
+						WithField("name", entityName).
+						Info("Parsing Schema")
+				}
 				// StructType
 				if tpe, ok := ts.Type.(*ast.StructType); ok {
 					e := newEntity()

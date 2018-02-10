@@ -5,363 +5,49 @@ info:
   description: ""
 servers: []
 paths:
-  /authorizations/{authorizationId}:
-    delete:
-      summary: Revoke authorization
-      description: revokes the specified authorization
-      responses:
-        "204":
-          content: {}
-          description: The Authorization is succefully revoked
-        "409":
-          content: {}
-          description: the authorization cannot be revoked
-      tags:
-      - authorizations
-      parameters:
-      - in: path
-        name: authorizationId
-        schema:
-          type: string
-        required: true
-        description: uuid of the authorization
-      security:
-      - oauth:
-        - account.authorizations.management
-        - account.authorizations.administration
-  /brands/xee/devices/{deviceId}:
+  /track/{trackId}:
     get:
-      summary: Retrieve device
-      description: Returns a device corresponding to specified id
+      summary: Retrieve a track
+      description: Returns a track corresponding to specified id
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/XeeDevice'
-          description: A device
+                $ref: '#/components/schemas/Track'
+            application/vnd.geo+json:
+              schema:
+                $ref: '#/components/schemas/Geojson'
+          description: A Track
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Device not found
+                $ref: '#/components/schemas/Error'
+          description: Track not found
       tags:
-      - devices
-      parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: string
-        required: true
-        description: id of the device
-      security:
-      - oauth:
-        - devices.administration
-  /brands/xee/devices/{deviceId}/attempts:
-    get:
-      summary: Retrieve pairing attempts of a device
-      description: returns pairings attempts corresponding to specified device id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairingAttempt'
-          description: An array of attempt
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Device not found
-      tags:
-      - devices
-      parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: string
-        required: true
-        description: id of the device
-      security:
-      - oauth:
-        - devices.administration
-    post:
-      summary: Insert pairing attempts of a device
-      description: inserts pairings attempts corresponding to specified device id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairingAttempt'
-          description: An array of attempt
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Device not found
-      tags:
-      - devices
-      parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: string
-        required: true
-        description: id of the device
-      - in: body
-        name: success
-        schema:
-          type: boolean
-        required: true
-        description: status for le pairing attempt
-      security:
-      - oauth:
-        - devices.administration
-  /brands/xee/devices/{deviceId}/pairings:
-    get:
-      summary: Retrieve pairings of a device
-      description: returns pairings corresponding to specified device id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairingAttempt'
-          description: An array of pairing
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Device not found
-      tags:
-      - devices
-      parameters:
-      - in: path
-        name: deviceId
-        schema:
-          type: string
-        required: true
-        description: id of the device
-      security:
-      - oauth:
-        - devices.administration
-  /privacies/{privacyId}:
-    put:
-      summary: Stop a privacy
-      description: Stop an existing privacy session
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Privacy'
-          description: A privacy
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: the PrivacyId parameter is not a valid uuid4
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: There is a conflit
-      tags:
-      - privacies
-      parameters:
-      - in: path
-        name: privacyId
-        schema:
-          type: string
-        required: true
-        description: uuid of the privacy
-      security:
-      - oauth:
-        - privacies.management
-  /search/users:
-    get:
-      summary: Retrieve users's
-      description: returns users corresponding to a query
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-          description: An array of users
-        "206":
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-          description: An array of users
-      tags:
-      - users
+      - track
       parameters:
       - in: header
-        name: range
+        name: Accept
         schema:
           type: string
+          enum:
+          - application/json
+          - application/vnd.geo+json
         required: false
-        description: Used for pagination, ex `signals=0-`, `signals=0-1000`, `signals=-3`
-      - in: query
-        name: q
-        schema:
-          type: string
-        required: true
-        description: the query
-      security:
-      - oauth:
-        - account.management
-  /users/{id}/vehicles:
-    post:
-      summary: Associate vehicle
-      description: Set a vehicle for an user through a specified device_id and pin
-        code
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Vehicle'
-          description: A vehicle
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: The userId parameter is not a valid uuid4 or your payload contains
-            some errors
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: You cannot associate this device
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: User not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: There is a conflit for that device
-      tags:
-      - vehicles
-      parameters:
+        description: The type of content to be returned, json or geojson
       - in: path
-        name: userId
+        name: trackId
         schema:
           type: string
         required: true
-        description: uuid of the user, me is also acceptable
-      requestBody:
-        description: Device to pair to the vehicle
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssociateDevice'
-      security:
-      - oauth:
-        - vehicles.management
-  /users/{userId}:
+        description: uuid of the track
+  /tracks/near/{lon}/{lat}:
     get:
-      summary: Retrieve an user
-      description: Returns a user corresponding to specified id, me is the current
-        user
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: An user
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: User not found
-      tags:
-      - users
-      parameters:
-      - in: path
-        name: userId
-        schema:
-          type: string
-        required: true
-        description: uuid of the user, me is also acceptable
-      security:
-      - oauth:
-        - account.read
-    put:
-      summary: Update an user
-      description: Update an user with a specified ID
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: An user
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: The userId parameter is not a valid uuid4 or your payload contains
-            some errors
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: User not found
-      tags:
-      - users
-      parameters:
-      - in: path
-        name: userId
-        schema:
-          type: string
-        required: true
-        description: uuid of the user, me is also acceptable
-      requestBody:
-        description: User to update
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EditableUser'
-      security:
-      - oauth:
-        - account.management
-  /users/{userId}/authorizations:
-    get:
-      summary: Retrieve users's authorizations
-      description: Returns authorizations corresponding to specified user id
+      summary: Retrieve tracks near a point
+      description: Returns a tracks near a point within a radius of 10km, sorted by
+        proximity
       responses:
         "200":
           content:
@@ -369,511 +55,241 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Authorization'
-          description: An array of authorization
+                  $ref: '#/components/schemas/Track'
+            application/vnd.geo+json:
+              schema:
+                $ref: '#/components/schemas/Geojson'
+          description: An Array of Tracks
       tags:
-      - authorizations
+      - track
       parameters:
       - in: path
-        name: userId
+        name: lat
         schema:
           type: string
         required: true
-        description: uuid of the user, me is also acceptable
-      security:
-      - oauth:
-        - account.authorizations.read
-  /users/{userId}/developer:
-    get:
-      summary: Used to know if a user is a developer and has a developer account
-      description: Returns developer account corresponding to specified user id
-      responses:
-        "204":
-          content: {}
-          description: The no-content response means that the user is a developer
-        "404":
-          content: {}
-          description: The not found response means that the user is not a developer
-      tags:
-      - users
-      parameters:
+        description: the latitude of the point
       - in: path
-        name: userId
+        name: lon
         schema:
           type: string
         required: true
-        description: uuid of the user, me is also acceptable
-      security:
-      - oauth:
-        - account.read
-    post:
-      summary: Used to create a developer account for a given user
-      description: create a developer account for a user specified by id
-      responses:
-        "201":
-          content: {}
-          description: The created status means that the user is now a developer
-        "409":
-          content: {}
-          description: The conflict status means that the user already was a developer
-      tags:
-      - users
-      parameters:
-      - in: path
-        name: userId
-        schema:
-          type: string
-        required: true
-        description: uuid of the user, me is also acceptable
-      security:
-      - oauth:
-        - account.management
-  /users/{userId}/vehicles:
-    get:
-      summary: Retrieve users's vehicles
-      description: Returns vehicles corresponding to specified user id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Vehicle'
-          description: An array of vehicle
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: User not found
-      tags:
-      - vehicles
-      parameters:
-      - in: path
-        name: userId
-        schema:
-          type: string
-        required: true
-        description: uuid of the user, me is also acceptable
-      security:
-      - oauth:
-        - vehicles.read
-  /vehicles/{id}/device:
-    delete:
-      summary: Disassociate vehicle
-      description: Delete the pairing between a vehicle and a device
-      responses:
-        "204":
-          content: {}
-          description: Success, the pairing is deleted
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-        "409":
-          content: {}
-          description: There is a conflit for that vehicle
-      tags:
-      - vehicles
-      parameters: []
-      security:
-      - oauth:
-        - vehicles.management
-  /vehicles/{id}/privacies:
-    get:
-      summary: Retrieve privacies
-      description: Returns vehicles privacies between 2 dates inclusive
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Privacy'
-          description: An array of privacies
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: At leat one parameter is not valid
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-      tags:
-      - privacies
-      parameters:
-      - in: path
-        name: vehicleId
-        schema:
-          type: string
-        required: true
-        description: uuid of the vehicle
-      - in: query
-        name: limit
-        schema:
-          type: integer
-        required: false
-        description: number of records returned
-      - in: query
-        name: from
-        schema:
-          type: string
-          format: date-time
-        required: false
-        description: the begining date of the search
-      - in: query
-        name: to
-        schema:
-          type: string
-          format: date-time
-        required: false
-        description: the ending date of the search
-      security:
-      - oauth:
-        - privacies.read
-    post:
-      summary: Creates a new privacy
-      description: Creates a new privacy session on this vehicle
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Privacy'
-          description: A privacy
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: The vehicleId parameter is not a valid uuid4
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: There is a conflit
-      tags:
-      - privacies
-      parameters:
-      - in: path
-        name: vehicleId
-        schema:
-          type: string
-        required: true
-        description: uuid of the vehicle
-      security:
-      - oauth:
-        - privacies.management
-  /vehicles/{vehicleId}:
-    get:
-      summary: Retrieve vehicle
-      description: Returns a vehicle corresponding to specified id
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Vehicle'
-          description: A vehicle
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: The vehicleId parameter is not a valid uuid4
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-      tags:
-      - vehicles
-      parameters:
-      - in: path
-        name: vehicleId
-        schema:
-          type: string
-        required: true
-        description: uuid of the vehicle
-      security:
-      - oauth:
-        - vehicle.read
-    put:
-      summary: Update vehicle
-      description: Update a vehicle with a specified ID
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Vehicle'
-          description: A vehicle
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: The vehicleId parameter is not a valid uuid4 or your payload
-            contains some errors
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDefinition'
-          description: Vehicle not found
-      tags:
-      - vehicles
-      parameters:
-      - in: path
-        name: vehicleId
-        schema:
-          type: string
-        required: true
-        description: uuid of the vehicle
-      requestBody:
-        description: Vehicle data
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EditableVehicle'
-      security:
-      - oauth:
-        - account.management
+        description: the longitude of the point
 components:
   schemas:
-    AssociateDevice:
-      required:
-      - deviceId
-      - devicePin
+    Address:
       type: object
       properties:
-        deviceId:
+        city:
           type: string
-        devicePin:
+        countryCode:
           type: string
-    Authorization:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        position:
+          nullable: true
+          $ref: '#/components/schemas/geojson'
+    Comment:
       type: object
       properties:
-        client:
-          $ref: '#/components/schemas/Client'
-        createdAt:
+        content:
+          type: string
+        creation:
           type: string
           format: date-time
         id:
           type: string
-        scopes:
-          type: array
-          items:
-            $ref: '#/components/schemas/Scope'
-        userId:
+        modification:
           type: string
-    Client:
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+    Elevation:
+      type: array
+      items:
+        $ref: ""
+    NearTrack:
       type: object
       properties:
+        Distance:
+          type: number
+        ID:
+          type: string
+    OSMAddress:
+      type: object
+      properties:
+        city:
+          type: string
+        country:
+          type: string
+        country_code:
+          type: string
+        county:
+          type: string
+        hamlet:
+          type: string
+        postcode:
+          type: string
+        public_building:
+          type: string
+        road:
+          type: string
+        state:
+          type: string
+        town:
+          type: string
+        village:
+          type: string
+    OsmPlace:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/OSMAddress'
+        boundingbox:
+          type: array
+          items:
+            type: string
+        display_name:
+          type: string
+        lat:
+          type: string
+        licence:
+          type: string
+        lon:
+          type: string
+        osm_id:
+          type: string
+        osm_type:
+          type: string
+        place_id:
+          type: string
+    Picture:
+      type: object
+      properties:
+        caption:
+          nullable: true
+          type: string
+        creation:
+          type: string
+          format: date-time
+        height:
+          type: integer
+        id:
+          type: string
+        position:
+          nullable: true
+          $ref: '#/components/schemas/geojson'
+        url:
+          type: string
+        width:
+          type: integer
+    Poi:
+      type: object
+      properties:
+        caption:
+          type: string
+        creation:
+          nullable: true
+          type: string
+          format: date-time
+        icon:
+          type: string
+        id:
+          type: string
+        modification:
+          nullable: true
+          type: string
+          format: date-time
+        position:
+          nullable: true
+          $ref: '#/components/schemas/geojson'
+    Rating:
+      type: object
+      oneOf:
+      - type: string
+      - type: integer
+    Track:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        creation:
+          type: string
+          format: date-time
         description:
           type: string
+        distance:
+          type: integer
+        downloads:
+          type: integer
+        elevationGain:
+          type: integer
+        elevationLoss:
+          type: integer
+        endAddress:
+          nullable: true
+          $ref: '#/components/schemas/Address'
         id:
           type: string
         name:
           type: string
-    EditablePairingAttempt:
-      type: object
-      properties:
-        success:
-          type: boolean
-    EditableUser:
-      type: object
-      properties:
-        email:
-          nullable: true
-          type: string
-        firstName:
-          nullable: true
-          type: string
-        gender:
-          nullable: true
-          type: string
-          enum:
-          - UNKNOWN
-          - MALE
-          - FEMALE
-        lastName:
-          nullable: true
-          type: string
-    EditableVehicle:
-      type: object
-      properties:
-        brand:
-          nullable: true
-          type: string
-        licensePlate:
-          nullable: true
-          type: string
-        model:
-          nullable: true
-          type: string
-        name:
-          nullable: true
-          type: string
-    ErrorDefinition:
-      type: object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-        error_details:
+        pictures:
           type: array
           items:
-            $ref: '#/components/schemas/FieldError'
-    FieldError:
-      type: object
-      properties:
-        constraint:
-          type: string
-        description:
-          type: string
-        field:
-          type: string
-    Pairing:
-      type: object
-      properties:
-        active:
-          type: boolean
-        brand:
-          type: string
-        deviceId:
-          type: string
-        endedAt:
+            $ref: '#/components/schemas/Picture'
+        pois:
+          type: array
+          items:
+            $ref: '#/components/schemas/Poi'
+        rating:
+          $ref: '#/components/schemas/Rating'
+        startAddress:
           nullable: true
-          type: string
-          format: date-time
-        startedAt:
-          type: string
-          format: date-time
-        vehicleId:
-          type: string
-    PairingAttempt:
-      type: object
-      properties:
-        createdAt:
-          type: string
-          format: date-time
-        deviceId:
-          type: string
-        success:
-          type: boolean
-    Privacy:
-      type: object
-      properties:
-        endedAt:
-          nullable: true
-          type: string
-          format: date-time
-        id:
-          type: string
-        startedAt:
-          type: string
-          format: date-time
-    Scope:
-      type: object
-      properties:
-        id:
-          type: string
-        identifier:
-          type: string
-        visibility:
-          type: string
+          $ref: '#/components/schemas/Address'
+        user:
+          $ref: '#/components/schemas/User'
+        video:
+          type: array
+          items:
+            $ref: '#/components/schemas/Video'
     User:
-      required:
-      - gender
-      - firstName
-      - lastName
-      - email
       type: object
       properties:
-        createdAt:
+        creation:
           type: string
           format: date-time
-        email:
-          type: string
-        firstName:
-          type: string
-        gender:
-          type: string
-          enum:
-          - UNKNOWN
-          - MALE
-          - FEMALE
         id:
           type: string
-        lastName:
-          type: string
-        updatedAt:
+        modification:
           nullable: true
           type: string
           format: date-time
-    Vehicle:
-      required:
-      - name
-      - brand
-      - model
-      - licensePlate
-      type: object
-      properties:
-        brand:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        device:
-          nullable: true
-          $ref: '#/components/schemas/XeeDevice'
-        fleetId:
-          nullable: true
-          type: string
-        id:
-          type: string
-        kType:
-          nullable: true
-          type: string
-        licensePlate:
-          type: string
-        model:
-          type: string
         name:
           type: string
-        updatedAt:
+    Video:
+      type: object
+      properties:
+        creation:
           nullable: true
           type: string
           format: date-time
-        userId:
+        id:
           nullable: true
           type: string
-    XeeDevice:
-      type: object
-      properties:
-        brand:
+        modification:
+          nullable: true
           type: string
-        id:
+          format: date-time
+        platform:
+          nullable: true
           type: string
-        vehicleId:
+        slug:
+          nullable: true
+          type: string
+        trackId:
           nullable: true
           type: string
