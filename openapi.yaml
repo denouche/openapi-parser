@@ -291,3 +291,12 @@ components:
         trackId:
           nullable: true
           type: string
+    geometry:
+      type: object
+      properties:
+        bbox:
+          type: array
+          items:
+            type: number
+        type:
+          $ref: '#/components/schemas/geojson'

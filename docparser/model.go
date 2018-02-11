@@ -231,6 +231,8 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 			continue
 		}
 		t := gd.Doc.Text()
+
+		// TODO: Rafacto with parseNamedType
 		for _, spc := range gd.Specs {
 
 			// If the node is a Type
