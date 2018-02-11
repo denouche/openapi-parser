@@ -78,15 +78,16 @@ func newEntity() schema {
 }
 
 type schema struct {
-	Nullable   bool              `yaml:"nullable,omitempty"`
-	Required   []string          `yaml:"required,omitempty"`
-	Type       string            `yaml:",omitempty"`
-	Items      map[string]string `yaml:",omitempty"`
-	Format     string            `yaml:"format,omitempty"`
-	Ref        string            `yaml:"$ref,omitempty"`
-	Enum       []string          `yaml:",omitempty"`
-	Properties map[string]schema `yaml:",omitempty"`
-	OneOf      []schema          `yaml:"oneOf,omitempty"`
+	Nullable             bool              `yaml:"nullable,omitempty"`
+	Required             []string          `yaml:"required,omitempty"`
+	Type                 string            `yaml:",omitempty"`
+	Items                map[string]string `yaml:",omitempty"`
+	Format               string            `yaml:"format,omitempty"`
+	Ref                  string            `yaml:"$ref,omitempty"`
+	Enum                 []string          `yaml:",omitempty"`
+	Properties           map[string]schema `yaml:",omitempty"`
+	AdditionalProperties bool              `yaml:"additionalProperties,omitempty"`
+	OneOf                []schema          `yaml:"oneOf,omitempty"`
 }
 
 type items struct {
@@ -252,29 +253,43 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					}
 				}
 
+				// array type
+				if ar, ok := ts.Type.(*ast.ArrayType); ok {
+					if i, ok := ar.Elt.(*ast.Ident); ok {
+						e := newEntity()
+						e.Type = "array"
+						t, _, _ := parseIdentProperty(i)
+						e.Items["type"] = t
+						logrus.
+							WithField("name", entityName).
+							Info("Parsing Schema")
+					}
+				}
+
 				// MapType
-				if _, ok := ts.Type.(*ast.MapType); ok {
+				if mp, ok := ts.Type.(*ast.MapType); ok {
 
-					e := newEntity()
-					e.Type = "object"
-
-					// Name overide
-					if len(a) == 3 {
-						if string(a[2]) != "" {
-							types := strings.Split(string(a[2]), ",")
-							for _, typ := range types {
-								f := newEntity()
-								f.Type = typ
-								e.OneOf = append(e.OneOf, f)
-							}
+					// only map[string]
+					if i, ok := mp.Key.(*ast.Ident); ok {
+						t, _, _ := parseIdentProperty(i)
+						if t != "string" {
+							continue
 						}
 					}
 
-					spec.Components.Schemas[entityName] = e
-					logrus.
-						WithField("name", entityName).
-						Info("Parsing Schema")
+					e := newEntity()
+					e.Type = "object"
+					e.AdditionalProperties = true
+
+					// map[string]interface{}
+					if _, ok := mp.Value.(*ast.InterfaceType); ok {
+						spec.Components.Schemas[entityName] = e
+						logrus.
+							WithField("name", entityName).
+							Info("Parsing Schema")
+					}
 				}
+
 				// StructType
 				if tpe, ok := ts.Type.(*ast.StructType); ok {
 					e := newEntity()
@@ -324,6 +339,7 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 					spec.Components.Schemas[entityName] = e
 				}
 
+				// ArrayType
 				if tpa, ok := ts.Type.(*ast.ArrayType); ok {
 					entity := newEntity()
 					p, err := parseNamedType(f, tpa.Elt)
@@ -331,10 +347,26 @@ func (spec *openAPI) parseSchemas(f *ast.File) {
 						logrus.WithError(err).Error("Can't parse the type of field in struct")
 						continue
 					}
+
 					entity.Type = "array"
-					entity.Items["$ref"] = p.Ref
+					if p.Ref != "" {
+						entity.Items["$ref"] = p.Ref
+					} else {
+						entity.Items["type"] = p.Type
+					}
+
 					spec.Components.Schemas[entityName] = entity
 				}
+
+				// if i, ok := ar.Elt.(*ast.Ident); ok {
+				// 	e := newEntity()
+				// 	e.Type = "array"
+				// 	t, _, _ := parseIdentProperty(i)
+				// 	e.Items["type"] = t
+				// 	logrus.
+				// 		WithField("name", entityName).
+				// 		Info("Parsing Schema")
+				// }
 
 			}
 		}

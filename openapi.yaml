@@ -109,7 +109,7 @@ components:
     Elevation:
       type: array
       items:
-        $ref: ""
+        type: number
     NearTrack:
       type: object
       properties:
@@ -207,9 +207,7 @@ components:
           $ref: '#/components/schemas/geojson'
     Rating:
       type: object
-      oneOf:
-      - type: string
-      - type: integer
+      additionalProperties: true
     Track:
       type: object
       properties:
